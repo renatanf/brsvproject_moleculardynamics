@@ -1,0 +1,20 @@
+# id_pocket_residues.in — identify the residues lining the binding site
+#
+# Run once per system, on the reference structure only. The resulting residue
+# list is then hard-coded into rmsd.in so that the same atoms are measured in
+# every frame and every replicate.
+#
+# Usage: cpptraj -i id_pocket_residues.in > id_pocket_residues.log 2>&1
+# Replace SYSTEM with the system name and LIG with the ligand residue name.
+
+parm SYSTEM_dry.prmtop
+
+# Load frame 1 only — the pocket is defined on the reference structure
+trajin SYSTEM_prod_rep1_dry.nc 1 1
+
+# Residues with at least one atom within 5 A of the ligand.
+# Output lists every matching atom; collapse it to unique residue numbers.
+# The ligand itself appears in the output and must be excluded from the list.
+mask :LIG<:5.0 maskout pocket_residues.dat
+
+go

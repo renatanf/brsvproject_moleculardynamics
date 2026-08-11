@@ -1,0 +1,28 @@
+# avg_structure.in — average structure over the equilibrated window (step 1 of 2)
+#
+# RMSF measures fluctuation around each atom's mean position, so the reference
+# must be the average structure of the trajectory itself. Computing that average
+# requires the frames to be aligned first, which is why this is a two-step
+# procedure: align to an arbitrary frame here, then realign to the average in
+# rmsf.in.
+#
+# Usage: cpptraj -i avg_structure.in > avg_structure.log 2>&1
+# Replace SYSTEM, REP and NRES before running.
+
+parm SYSTEM_dry.prmtop
+
+# Preliminary alignment target
+reference SYSTEM_prod_REP_dry.nc 1
+
+# Equilibrated window only — the initial drift is systematic, not fluctuation.
+# 100 frames = 1 ns here (5,000 frames over 50 ns); 2501-5000 = last 25 ns.
+trajin SYSTEM_prod_REP_dry.nc 2501 5000
+
+# Remove global translation and rotation before averaging
+rms fit_first reference :1-NRES@CA
+
+# Average structure; written for all atoms, since it serves as a reference
+# structure. The restriction to Ca happens in the masks, not here.
+average avg_REP.rst7
+
+go

@@ -1,0 +1,30 @@
+# rmsd.in — backbone, ligand and binding-pocket RMSD
+#
+# Usage: cpptraj -i rmsd.in > rmsd.log 2>&1
+# Replace SYSTEM, REP, LIG, and POCKET_RESIDUES before running.
+#
+# Command order matters: the backbone line performs the superposition and
+# modifies the frame coordinates; the nofit lines below inherit that alignment.
+
+parm SYSTEM_dry.prmtop
+
+# Reference for all RMSD values (cpptraj indexes frames from 1)
+reference SYSTEM_prod_REP_dry.nc 1
+
+trajin SYSTEM_prod_REP_dry.nc
+
+# Global stability. Also provides the fit that removes translation/rotation.
+rmsd backbone @CA,N,C out rmsd_backbone_REP.dat mass reference
+
+# Ligand displacement relative to the protein. nofit prevents a second
+# superposition, which would only report internal deformation of the ligand.
+rmsd ligand :LIG out rmsd_ligand_REP.dat mass reference nofit
+
+# Local stability of the binding site. Residue list from id_pocket_residues.in,
+# kept identical across replicates.
+rmsd pocket :POCKET_RESIDUES@CA,N,C out rmsd_pocket_REP.dat mass reference nofit
+
+go
+
+# Check in the log that each mask matched the expected number of atoms —
+# a mask that matches nothing still produces an output file.

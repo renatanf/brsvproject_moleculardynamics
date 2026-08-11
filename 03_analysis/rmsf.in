@@ -1,0 +1,26 @@
+# rmsf.in — per-residue RMSF of the Ca atoms (step 2 of 2)
+#
+# Run after avg_structure.in, which produces avg_REP.rst7.
+# The trajin window must be identical to the one used for the average.
+#
+# Usage: cpptraj -i rmsf.in > rmsf.log 2>&1
+# Replace SYSTEM, REP and NRES before running.
+
+parm SYSTEM_dry.prmtop
+
+# Average structure from step 1 — the reference RMSF is defined against
+reference avg_REP.rst7 [avg]
+
+trajin SYSTEM_prod_REP_dry.nc 2501 5000
+
+# Final alignment: superpose every frame onto the average structure
+rms fit_avg ref [avg] :1-NRES@CA
+
+# Fluctuation of each Ca around its mean position over the window.
+# byres labels the output per residue; with a Ca-only mask it does not average.
+atomicfluct out rmsf_REP.dat :1-NRES@CA byres
+
+go
+
+# Check in the log that the mask matched NRES atoms (one Ca per residue)
+# and that the expected number of frames was read.

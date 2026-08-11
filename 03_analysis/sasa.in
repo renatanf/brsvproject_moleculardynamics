@@ -1,0 +1,31 @@
+# sasa.in — solvent-accessible surface area of the complex and of the ligand
+#
+# Ligand SASA is computed within the complex: the surrounding protein occludes
+# part of the ligand surface, so lower values mean the ligand is more deeply
+# buried in the pocket. This distinguishes repositioning inside the site from
+# displacement out of it — something ligand RMSD alone cannot resolve.
+#
+# Usage: cpptraj -i sasa.in > sasa.log 2>&1
+# Replace SYSTEM, REP, LIG and NRES before running.
+
+parm SYSTEM_dry.prmtop
+
+# Stride of 10 (one frame every 100 ps). surf is far slower than rmsd —
+# roughly 6 min per trajectory at this sampling, ~1 h without the stride.
+# SASA varies smoothly, so 500 frames are enough.
+trajin SYSTEM_prod_REP_dry.nc 1 5000 10
+
+# Whole complex: protein + ligand. Control for the overall fold.
+surf complex :1-NRES out sasa_complex_REP.dat
+
+# Ligand only, occluded by the protein around it.
+surf ligand :LIG out sasa_ligand_REP.dat
+
+go
+
+# Notes from the log worth checking:
+#   - probe radius is 1.4 A (reported as "van der Waals offset")
+#   - LCPO is defined for heavy atoms only, so the atom count used in the
+#     calculation is lower than the mask count (hydrogens are excluded)
+#   - any warning about missing LCPO parameters means the ligand surface
+#     would be underestimated

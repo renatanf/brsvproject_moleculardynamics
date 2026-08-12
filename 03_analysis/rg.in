@@ -1,0 +1,24 @@
+# rg.in — radius of gyration of the protein
+#
+# Rg measures how far the mass is spread around the centre of mass: lower means
+# more compact. Unlike RMSD it needs no reference structure — it is a property
+# of each frame on its own. Used here as a control: a stable Rg means the
+# protein kept its fold, so any ligand behaviour is the ligand's, not the
+# protein coming apart.
+#
+# Usage: cpptraj -i rg.in > rg.log 2>&1
+# Replace SYSTEM, REP and NRES before running.
+
+parm SYSTEM_dry.prmtop
+
+# Full trajectory, no stride — radgyr is fast (seconds), unlike surf.
+trajin SYSTEM_prod_REP_dry.nc
+
+# Protein only; the ligand is the last residue and is left out so the value
+# refers to the protein alone.
+#   mass  = mass-weighted, the conventional definition
+#   nomax = suppress the extra "max distance from centre" column, which would
+#           otherwise make the output three columns instead of two
+radgyr rg :1-NRES out rg_REP.dat mass nomax
+
+go

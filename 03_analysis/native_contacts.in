@@ -1,0 +1,59 @@
+# native_contacts.in - CPPTRAJ
+#
+# Fraction of native protein-ligand contacts (Q) over the production run.
+#
+# Usage:
+#   cpptraj -i native_contacts.in
+# Run inside each replicate directory.
+#
+# Replace before running:
+#   SYSTEM -> system name          (e.g. BRSV_L_isoquercetin)
+#   LIG    -> ligand resname       (e.g. TIL)
+#   NRES   -> last protein residue (e.g. 2161)
+#
+# ---------------------------------------------------------------------------
+# Conventions, kept identical across all systems and replicates:
+#
+#   DRY topology and trajectory (solvent and counter-ions stripped).
+#
+#   Reference = frame 1 of the trajectory being analysed. Same convention as
+#   RMSD and RMSF, so the three analyses can be read together: a drop in Q and
+#   a rise in RMSD then describe departure from the same structure. Because
+#   each replicate has its own N(0), Q is reported per replicate and never
+#   averaged across replicates.
+#
+#   Heavy atoms only (!@H=). Including hydrogens multiplies each real contact
+#   by however many H atoms the group carries, making the absolute count depend
+#   on group composition and not comparable with published values.
+#
+#   4.5 A cutoff.
+#
+#   Q = N(t)/N(0). N(0) is the number of pairs listed in the native section of
+#   contacts_list.dat, above the "# Non-native Contacts" line.
+# ---------------------------------------------------------------------------
+#
+# Sanity check after running: the non-native column at frame 1 of
+# native_contacts.dat must be 0. If it is not, the reference is not frame 1 of
+# this trajectory.
+#
+# Outputs:
+#   native_contacts.dat  frame | native | non-native
+#   contacts_list.dat    atom pairs, with occupancy fraction
+#   contacts_byres.dat   contacts aggregated by residue pair
+
+parm SYSTEM_solvated_dry.prmtop
+
+reference SYSTEM_solvated_prod_dry.nc 1 [ref]
+
+trajin SYSTEM_solvated_prod_dry.nc
+
+nativecontacts :1-NRES&!@H= :LIG&!@H= \
+  ref [ref] \
+  distance 4.5 \
+  savenonnative \
+  out native_contacts.dat \
+  writecontacts contacts_list.dat \
+  resout contacts_byres.dat
+
+go
+quit

@@ -1,0 +1,84 @@
+# clustering.in - CPPTRAJ
+#
+# Clusters the ligand binding pose over the production runs and writes one
+# representative structure per cluster.
+#
+# Usage:
+#   cpptraj -i clustering.in
+# Run from a FRESH directory: output names are fixed, so running twice in the
+# same folder silently overwrites the previous results, including the rep.c*.pdb
+# files used for figures.
+#
+# Replace before running:
+#   SYSTEM  -> system name         (e.g. BRSV_L_isoquercetin)
+#   LIG     -> ligand resname      (e.g. TIL)
+#   POCKET  -> binding-pocket residue list, comma-separated
+#
+# ---------------------------------------------------------------------------
+# Conventions and the reasoning behind them:
+#
+#   The three replicates are concatenated so that clusters are defined on a
+#   common basis. Without this, cluster 0 of one replicate has no relation to
+#   cluster 0 of another and the states cannot be compared.
+#
+#   Superposition uses the backbone of the POCKET, not of the whole protein.
+#   This matters: with a 2,161-residue protein, global backbone alignment is
+#   dominated by regions far from the site, and small global differences show up
+#   as apparent ligand displacement. Clustering under global alignment separated
+#   the trajectories by replicate rather than by pose (SSR/SST 0.55) and missed a
+#   transition that the native-contact analysis had detected; with pocket
+#   alignment the same transition appeared and SSR/SST rose to 0.91.
+#
+#   The clustering metric is the LIGAND alone, heavy atoms, no re-fitting. The
+#   preceding rms sets the frame of reference; nofit means the RMSD measures
+#   where the ligand sits within that reference.
+#
+#   epsilon 1.5 A. Chosen because it resolves the conformational transition
+#   independently identified by the native-contact analysis; a larger cutoff
+#   merges the states on either side of it. Keep the same value across all
+#   systems, or cluster counts are not comparable between them.
+#
+#   sieve 10 builds the pairwise matrix from every tenth frame and assigns the
+#   rest afterwards. Restoration is automatic - "sieverestore" is not a valid
+#   keyword. Raise to 20 if memory is tight.
+#
+#   Frame 501 onward discards the first 5 ns of each run, matching the
+#   equilibration criterion used elsewhere.
+# ---------------------------------------------------------------------------
+#
+# Outputs:
+#   cnumvtime.dat   cluster assigned to each frame (13,500 rows: 4,500 per
+#                   replicate, in the order the trajectories were loaded)
+#   summary.dat     size, average distance and centroid frame of each cluster
+#   info.dat        cluster count, DBI, pSF and SSR/SST
+#   cpopvtime.dat   population of each cluster over time, pooled
+#   rep.c*.pdb      representative structure of each cluster
+#
+# Sanity checks on the results:
+#   - clusters shared between replicates: if every cluster belongs to a single
+#     replicate, the superposition is probably still removing the wrong motion
+#   - SSR/SST: below ~0.7 the clusters explain little of the variance
+#   - cluster boundaries should line up with events seen in other analyses
+
+parm SYSTEM_solvated_dry.prmtop
+
+trajin SYSTEM_solvated_prod_dry.nc 501 last
+trajin SYSTEM_solvated_prod_rep2_dry.nc 501 last
+trajin SYSTEM_solvated_prod_rep3_dry.nc 501 last
+
+autoimage
+
+rms fitpocket :POCKET@CA,N,C first mass
+
+cluster C1 \
+  hieragglo epsilon 1.5 averagelinkage \
+  rms :LIG&!@H= nofit mass \
+  sieve 10 \
+  out cnumvtime.dat \
+  summary summary.dat \
+  info info.dat \
+  repout rep repfmt pdb \
+  cpopvtime cpopvtime.dat normframe
+
+go
+quit

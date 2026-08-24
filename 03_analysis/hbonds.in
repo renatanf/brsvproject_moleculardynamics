@@ -1,0 +1,53 @@
+# =============================================================================
+# Direct protein-ligand hydrogen bonds
+#
+# BRSV L protein in complex with isoquercetin or kaempferol.
+# Run once per system and replicate, editing the topology, the trajectory and
+# the three output file names.
+#
+#   cpptraj -i hbonds.in 2>&1 | tee hbonds.log
+#
+# Log checks before trusting the output:
+#   - no "unhandled" or "unknown" argument warnings
+#   - cutoffs printed as 3.500 and 120.000
+#   - 4500 frames processed
+#   - avgout file has tens of lines. Thousands means nointramol did not
+#     filter; zero or one means the ligand mask matched nothing, which
+#     "cpptraj -p <topology> --resmask :TIL" will confirm.
+# =============================================================================
+
+# Solute-only topology and trajectory: water and ions were stripped, since
+# only direct protein-ligand contacts are measured here
+parm BRSV_L_isoquercetin_solvated_dry.prmtop
+
+# Skip the first 500 frames (5 ns) of thermodynamic equilibration,
+# leaving 4500 frames per replicate
+trajin BRSV_L_isoquercetin_solvated_prod_dry.nc 501 last
+
+# Correct periodic-boundary artifacts before measuring distances
+autoimage
+
+# Search the union of the protein (residues 1-2161) and the ligand
+# (resname TIL, used for both flavonoids).
+#
+# "nointramol" keeps only hydrogen bonds between different molecules. For a
+# single-chain protein plus one ligand, that is exactly the protein-ligand
+# interface. Note that hbond takes ONE search mask: passing two positional
+# masks does not define an interface, it silently measures something else.
+#
+# The 3.5 A / 120 degree criteria are passed explicitly because the cpptraj
+# defaults are 3.0 A and 135 degrees.
+hbond HB (:1-2161)|(:TIL) nointramol \
+  dist 3.5 angle 120 \
+  out hb_total_iso_rep1.dat \
+  avgout hb_avg_iso_rep1.dat \
+  series uuseries hb_series_iso_rep1.dat
+
+# out      -> number of hydrogen bonds per frame
+# avgout   -> occupancy of each donor-acceptor pair over the trajectory
+# uuseries -> per-frame presence of each individual bond, which allows
+#             occupancies to be split by conformational state instead of
+#             being averaged over the whole run
+
+run
+quit

@@ -1,0 +1,57 @@
+# =============================================================================
+# Water-mediated protein-ligand hydrogen bonds
+#
+# Same geometric criteria as the direct hydrogen bonds. A bridge is a single
+# water molecule simultaneously hydrogen-bonded to a ligand atom and to a
+# protein atom.
+#
+# Run once per system and replicate, editing the topology, the trajectory,
+# the binding-site mask and the four output file names.
+#
+#   cpptraj -i hbonds_water.in 2>&1 | tee hbonds_water.log
+#
+# Two deliberate restrictions, both stated in the manuscript:
+#
+#   1. The mask is limited to the binding-site residues. Over the whole
+#      protein, bridgeout builds the bridge map between every pair of solute
+#      residues; for 2161 residues cpptraj estimated 71 GB. A single bridging
+#      water cannot span more than about 7 A and the binding site was defined
+#      at 5 A from the ligand, so residues outside it cannot be bridged to it.
+#
+#   2. Every tenth frame is read (450 instead of 4500). Bridge occupancy is a
+#      time-averaged quantity, not a discrete event that has to be caught
+#      frame by frame.
+#
+# No "series" here: solute-solvent time series over this many sites exhaust
+# memory, and the cross-analysis with clustering uses the direct bonds.
+# =============================================================================
+
+# Solvated topology and trajectory: the water molecules are the point
+parm BRSV_L_isoquercetin_solvated.prmtop
+trajin BRSV_L_isoquercetin_solvated_prod.nc 501 last 10
+
+# Mandatory here, not optional. Without it the bridging waters are imaged
+# across the box and the bridges disappear.
+autoimage
+
+# Binding-site residues (within 5 A of the ligand in the reference structure)
+# plus the ligand. For kaempferol, replace with:
+#   :503,670-671,674-675,691-693,800-802,813-815,864,871,1504,1506-1510,2083-2085
+hbond HBW (:535,537-540,579,617,619,624-629,634,637-638,641,774-780)|(:TIL) nointramol \
+  dist 3.5 angle 120 \
+  solventdonor :WAT solventacceptor :WAT@O \
+  out hb_wat_total_iso_rep1.dat \
+  avgout hb_wat_avg_iso_rep1.dat \
+  solvout hb_solv_iso_rep1.dat \
+  bridgeout hb_bridge_iso_rep1.dat
+
+# out       -> per frame: direct bonds, solute-solvent bonds, bridging waters
+# avgout    -> occupancy of each direct donor-acceptor pair within the site
+# solvout   -> occupancy of solute-solvent hydrogen bonds
+# bridgeout -> which residue sets each bridging water connects, and for how
+#              many frames. cpptraj also reports protein-protein bridges, so
+#              entries not involving residue 2162 are discarded afterwards:
+#                grep "2162:TIL" hb_bridge_iso_rep1.dat
+
+run
+quit

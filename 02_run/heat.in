@@ -1,0 +1,25 @@
+Aquecimento Gradual do Complexo ate 310K
+ &cntrl
+  imin=0,
+  irest=0,
+  ntx=1,
+  nstlim=25000,
+  dt=0.002,
+  ntpr=250,
+  ntwr=500,
+  ntwx=250,
+  ntf=2,
+  ntc=2,
+  ntb=1,
+  cut=10.0,
+  ntt=3,
+  gamma_ln=2.0,
+  tempi=0.0,
+  temp0=310.0,
+  ntr=1,
+  restraintmask='!(:WAT,Na+)',
+  restraint_wt=10.0,
+  nmropt=1,
+ /
+ &wt type='TEMP0', istep1=0, istep2=25000, value1=0.0, value2=310.0 /
+ &wt type='END' /
